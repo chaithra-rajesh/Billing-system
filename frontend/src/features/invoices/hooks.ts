@@ -5,8 +5,10 @@ import {
   createInvoice,
   getInvoice,
   listInvoices,
+  updateInvoice,
   type CreateInvoiceInput,
   type InvoiceStatus,
+  type UpdateInvoiceInput,
 } from './api';
 
 export const invoiceKeys = {
@@ -61,6 +63,18 @@ export function useCreateInvoice() {
       createInvoice(input, idempotencyKey),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: invoiceKeys.all });
+    },
+  });
+}
+
+export function useUpdateInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ input, idempotencyKey }: { input: UpdateInvoiceInput; idempotencyKey: string }) =>
+      updateInvoice(input, idempotencyKey),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: invoiceKeys.all });
+      qc.invalidateQueries({ queryKey: invoiceKeys.detail(data.invoice.id) });
     },
   });
 }

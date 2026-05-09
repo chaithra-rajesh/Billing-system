@@ -151,6 +151,31 @@ export interface CreateInvoiceResponse {
   items: InvoiceItem[];
 }
 
+export interface UpdateInvoiceInput {
+  invoice_id: string;
+  customer_id: string;
+  invoice_date?: string;
+  date_of_supply?: string;
+  transport_mode?: string;
+  vehicle_no?: string;
+  place_of_supply?: string;
+  ship_to_name?: string;
+  ship_to_address?: string;
+  ship_to_gstin?: string;
+  ship_to_state?: string;
+  ship_to_state_code?: string;
+  items: CreateInvoiceItemInput[];
+  tax_mode?: 'intra' | 'inter';
+  cgst_percent?: number;
+  sgst_percent?: number;
+  igst_percent?: number;
+}
+
+export interface UpdateInvoiceResponse {
+  invoice: InvoiceRow;
+  items: InvoiceItem[];
+}
+
 export function listInvoices(
   franchiseId: string,
   opts?: { status?: InvoiceStatus; limit?: number; offset?: number; signal?: AbortSignal },
@@ -175,6 +200,13 @@ export function getInvoice(invoiceId: string, signal?: AbortSignal) {
 
 export function createInvoice(input: CreateInvoiceInput, idempotencyKey: string) {
   return invokeFunction<CreateInvoiceResponse>('create-invoice', {
+    body: input,
+    idempotencyKey,
+  });
+}
+
+export function updateInvoice(input: UpdateInvoiceInput, idempotencyKey: string) {
+  return invokeFunction<UpdateInvoiceResponse>('update-invoice', {
     body: input,
     idempotencyKey,
   });

@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { FormError } from '@/components/ui/form-error';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LoadingForm } from '@/components/ui/loading-states';
 import { useCreateFranchise, useMyFranchises } from '@/features/franchises/hooks';
 
 interface CreateValues {
@@ -54,7 +55,7 @@ function NewFranchiseView() {
     return (
       <AppShell>
         <PageTitle title="New franchise" />
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <LoadingForm fields={7} />
       </AppShell>
     );
   }

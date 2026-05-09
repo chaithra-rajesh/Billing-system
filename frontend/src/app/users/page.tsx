@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { FormError } from '@/components/ui/form-error';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LoadingTableCard } from '@/components/ui/loading-states';
 import { useMyFranchises } from '@/features/franchises/hooks';
 import {
   useAllUsers,
@@ -92,7 +93,7 @@ function UsersView() {
     return (
       <AppShell>
         <PageTitle title="Users" />
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <LoadingTableCard rows={5} cols={4} />
       </AppShell>
     );
   }
@@ -274,7 +275,7 @@ function UsersView() {
           )}
         </div>
 
-        {isLoading && <p className="text-sm text-muted-foreground">Loading users…</p>}
+        {isLoading && <LoadingTableCard rows={4} cols={4} />}
         {error && (
           <p className="text-sm text-destructive">
             {(error as Error).message || 'Failed to load users'}

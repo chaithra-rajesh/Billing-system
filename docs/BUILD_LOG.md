@@ -14,6 +14,37 @@ Format per entry:
 
 ---
 
+## 2026-05-09 — auth: 30-day session inactivity timeout
+
+**What changed:** Added `[auth.sessions]` block to `backend/supabase/config.toml` with `inactivity_timeout = "720h"` (30 days). Refresh tokens become invalid if the user hasn't used the app within 30 days. `timebox` is intentionally unset — active users stay logged in indefinitely (no hard cap).
+
+**Why:** Default refresh tokens never expire, which is too permissive for a system that touches money + GST data. 30 days balances security against user friction (re-login every 30 days of inactivity is acceptable).
+
+**Files:** `backend/supabase/config.toml`.
+
+**Follow-ups:** This setting only takes effect locally. **Production must be set in the Supabase dashboard** at Auth → Sessions → Inactivity timeout = 30 days. (Note: this is a Pro-plan feature on managed Supabase; on Free, refresh tokens never expire.) Local Supabase needs `supabase stop && supabase start` for the change to apply.
+
+---
+
+## 2026-05-09 — invoice draft edit + global loading polish
+
+**What changed:** Two parallel changes. (1) Drafts can now be edited: new `update-invoice` edge function refuses non-drafts, replaces items, recomputes amounts, idempotent. New `invoices/[id]/edit` page reuses an extracted `InvoiceForm` component (same form is now used by `new` and `edit`). Detail page shows "Edit draft" button only when `status === 'draft'`. (2) Global `<TopProgressBar />` mounted in providers, driven by TanStack Query's `useIsFetching` + Next.js route changes. New `<Skeleton>` primitive + `LoadingTableCard` / `LoadingCard` / `LoadingForm` / `LoadingInvoiceForm` compositions replaced plain "Loading…" text on 8 pages.
+
+**Why:** Drafts without an edit flow defeat the purpose of saving as draft. Loading skeletons + progress bar cut the perceived latency on data-heavy screens (invoice list, detail) and give every page consistent feedback during fetch/route transitions.
+
+**Files:**
+- `backend/supabase/functions/update-invoice/index.ts` (new)
+- `frontend/src/features/invoices/api.ts`, `hooks.ts`
+- `frontend/src/features/invoices/components/invoice-form.tsx` (new — extracted from `new/page.tsx`)
+- `frontend/src/app/franchises/[slug]/invoices/new/page.tsx`, `[id]/page.tsx`, `[id]/edit/page.tsx` (new)
+- `frontend/src/components/ui/top-progress-bar.tsx` (new), `skeleton.tsx` (new), `loading-states.tsx` (new)
+- `frontend/src/app/providers.tsx`, `frontend/tailwind.config.ts` (new keyframe)
+- 8 page files updated with skeleton loaders.
+
+**Follow-ups:** Pre-existing lint warnings (cross-feature deep imports) not addressed — out of scope. Item replace in `update-invoice` is delete-then-insert, not transactional across the two SDK calls (matches the create pattern); audit trigger preserves history.
+
+---
+
 ## 2026-05-06 — system_user role + per-user "Assign to another franchise" UX
 
 **What changed:** New `system_user` role joins `franchise_admin` and `billing_user` on `user_franchise_roles`. Functionally equivalent to billing_user under current RLS (can create/edit invoices in the franchises they're assigned to but cannot edit franchise settings or manage other users); the separate label is for distinguishing operational/platform staff in audits and reporting. To make the multi-franchise capability visible, each user card on `/users` now has an inline "Assign to another franchise" expander — pick a franchise that the user isn't already in, pick a role, click Add. Reuses `invite-user` (which already handles "existing user, new franchise"), so no new endpoint.

@@ -8,6 +8,7 @@ import { RequireAuth } from '@/components/auth/require-auth';
 import { AppShell, PageActions, PageTitle } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingTableCard } from '@/components/ui/loading-states';
 import { useMyFranchises } from '@/features/franchises/hooks';
 
 export default function FranchisesPage() {
@@ -44,7 +45,7 @@ function FranchisesView() {
         </PageActions>
       )}
 
-      {isLoading && <p className="text-sm text-muted-foreground">Loading franchises…</p>}
+      {isLoading && <LoadingTableCard rows={4} cols={3} />}
 
       {error && (
         <Card>

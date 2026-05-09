@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { FormError } from '@/components/ui/form-error';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LoadingForm } from '@/components/ui/loading-states';
 import { Textarea } from '@/components/ui/textarea';
 import {
   useFranchiseBySlug,
@@ -57,7 +58,10 @@ function SettingsView({ slug }: { slug: string }) {
     return (
       <AppShell>
         <PageTitle title="Settings" />
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <div className="space-y-4">
+          <LoadingForm fields={5} />
+          <LoadingForm fields={3} />
+        </div>
       </AppShell>
     );
   }

@@ -7,6 +7,7 @@ import { RequireAuth } from '@/components/auth/require-auth';
 import { AppShell, PageActions, PageTitle } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingTableCard } from '@/components/ui/loading-states';
 import { useFranchiseBySlug } from '@/features/franchises/hooks';
 import { useInvoices } from '@/features/invoices/hooks';
 import { InvoiceStatusBadge } from '@/features/invoices/status-badge';
@@ -69,9 +70,7 @@ function InvoicesListView({ slug }: { slug: string }) {
         </Button>
       </PageActions>
 
-      {(isLoading || loadingFranchise) && (
-        <p className="text-sm text-muted-foreground">Loading invoices…</p>
-      )}
+      {(isLoading || loadingFranchise) && <LoadingTableCard rows={6} cols={5} />}
       {error && (
         <Card>
           <CardHeader>

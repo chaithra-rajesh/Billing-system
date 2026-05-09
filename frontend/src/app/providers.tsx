@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 import { useState, type ReactNode } from 'react';
+import { TopProgressBar } from '@/components/ui/top-progress-bar';
 
 /**
  * Top-level client providers. Composed by app/layout.tsx.
@@ -35,6 +36,7 @@ export function Providers({ children }: { children: ReactNode }) {
       disableTransitionOnChange
     >
       <QueryClientProvider client={queryClient}>
+        <TopProgressBar />
         {children}
         <Toaster position="top-right" richColors closeButton />
       </QueryClientProvider>

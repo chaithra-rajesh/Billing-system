@@ -6,6 +6,7 @@ import { RequireAuth } from '@/components/auth/require-auth';
 import { AppShell, PageActions, PageTitle } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingCard } from '@/components/ui/loading-states';
 import { useInvoice } from '@/features/invoices/hooks';
 import { InvoiceStatusBadge } from '@/features/invoices/status-badge';
 import { DownloadPdfButton } from '@/features/invoices/components/download-pdf-button';
@@ -33,7 +34,11 @@ function InvoiceDetailView({ slug, invoiceId }: { slug: string; invoiceId: strin
     return (
       <AppShell>
         <PageTitle title="Invoice" />
-        <p className="text-sm text-muted-foreground">Loading invoice…</p>
+        <div className="space-y-4">
+          <LoadingCard lines={4} />
+          <LoadingCard lines={6} />
+          <LoadingCard lines={3} />
+        </div>
       </AppShell>
     );
   }
@@ -71,6 +76,16 @@ function InvoiceDetailView({ slug, invoiceId }: { slug: string; invoiceId: strin
             <Button variant="outline" onClick={() => router.push(`/franchises/${slug}/invoices`)}>
               Back to list
             </Button>
+            {invoice.status === 'draft' && (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  router.push(`/franchises/${slug}/invoices/${invoice.id}/edit`)
+                }
+              >
+                Edit draft
+              </Button>
+            )}
             <DownloadPdfButton />
           </PageActions>
 

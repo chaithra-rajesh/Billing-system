@@ -45,6 +45,13 @@ additional_redirect_urls = ["http://localhost:3000/auth/callback"]
 jwt_expiry = 3600
 enable_signup = true
 
+[auth.sessions]
+# Force re-auth after 30 days of inactivity. Refresh token becomes invalid if
+# the user has not used the app within this window. Timebox is left unset
+# (meaning "no hard cap") — active users stay signed in indefinitely.
+# Format: Go duration string. 720h = 30 days.
+inactivity_timeout = "720h"
+
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
