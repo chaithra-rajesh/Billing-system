@@ -1,5 +1,7 @@
 'use client';
 
+export const runtime = 'edge';
+
 import { use } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
