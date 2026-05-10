@@ -7,7 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "pages:build": "node -e \"const fs=require('fs');const lines=Object.entries(process.env).filter(([k])=>k.startsWith('NEXT_PUBLIC_')).map(([k,v])=>k+'='+v).join('\\n');fs.writeFileSync('.env.production',lines+'\\n')\" && npx @cloudflare/next-on-pages && node -e \"require('fs').writeFileSync('.vercel/output/static/.assetsignore', '_worker.js\\n')\"",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\"",
     "test": "vitest run"
@@ -33,7 +32,6 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.13.16",
     "@types/node": "^22.7.4",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

@@ -1,7 +1,5 @@
 'use client';
 
-export const runtime = 'edge';
-
 import { use } from 'react';
 import { useRouter } from 'next/navigation';
 import { RequireAuth } from '@/components/auth/require-auth';
