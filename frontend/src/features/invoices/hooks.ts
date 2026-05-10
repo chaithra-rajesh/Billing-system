@@ -3,10 +3,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createInvoice,
+  finaliseInvoice,
   getInvoice,
   listInvoices,
   updateInvoice,
   type CreateInvoiceInput,
+  type FinaliseInvoiceInput,
   type InvoiceStatus,
   type UpdateInvoiceInput,
 } from './api';
@@ -72,6 +74,23 @@ export function useUpdateInvoice() {
   return useMutation({
     mutationFn: ({ input, idempotencyKey }: { input: UpdateInvoiceInput; idempotencyKey: string }) =>
       updateInvoice(input, idempotencyKey),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: invoiceKeys.all });
+      qc.invalidateQueries({ queryKey: invoiceKeys.detail(data.invoice.id) });
+    },
+  });
+}
+
+export function useFinaliseInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      input,
+      idempotencyKey,
+    }: {
+      input: FinaliseInvoiceInput;
+      idempotencyKey: string;
+    }) => finaliseInvoice(input, idempotencyKey),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: invoiceKeys.all });
       qc.invalidateQueries({ queryKey: invoiceKeys.detail(data.invoice.id) });

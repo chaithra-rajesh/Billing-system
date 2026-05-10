@@ -4,7 +4,13 @@
  * and (when present) the most recent editor as `{id, email, full_name}`.
  *
  * Body: { invoice_id: uuid }
- * Response: { invoice, items, customer, franchise, creator, last_editor }
+ * Response: { invoice, items, customer, franchise, bank, creator, last_editor }
+ *
+ * `bank` is the franchise's currently-active bank_details row. The printable
+ * uses it as a fallback when invoice.bank_snapshot is null (drafts, or older
+ * rows finalised before snapshot capture was wired up). Finalised invoices
+ * still print from bank_snapshot — `bank` is only consulted when the snapshot
+ * is missing, so rule 3 (immutability of finalised rows) is preserved.
  */
 
 import { serveJson } from '../_shared/handler.ts';
@@ -35,7 +41,7 @@ serveJson(async ({ sb, body }) => {
       new Set([invoice.created_by, invoice.last_edited_by].filter(Boolean) as string[]),
     );
 
-    const [itemsRes, customerRes, franchiseRes, usersRes] = await Promise.all([
+    const [itemsRes, customerRes, franchiseRes, bankRes, usersRes] = await Promise.all([
       sb
         .from('invoice_items')
         .select('id, sl_no, particulars, hsn_code, quantity, rate, amount')
@@ -43,6 +49,12 @@ serveJson(async ({ sb, body }) => {
         .order('sl_no'),
       sb.from('customers').select('*').eq('id', invoice.customer_id).maybeSingle(),
       sb.from('franchises').select('*').eq('id', invoice.franchise_id).maybeSingle(),
+      sb
+        .from('bank_details')
+        .select('bank_name, account_no, ifsc, branch')
+        .eq('franchise_id', invoice.franchise_id)
+        .eq('is_active', true)
+        .maybeSingle(),
       userIds.length > 0
         ? admin.from('users').select('id, email, full_name').in('id', userIds)
         : Promise.resolve({ data: [], error: null as { message: string } | null }),
@@ -50,6 +62,7 @@ serveJson(async ({ sb, body }) => {
     if (itemsRes.error) throw Err.internal(itemsRes.error.message);
     if (customerRes.error) throw Err.internal(customerRes.error.message);
     if (franchiseRes.error) throw Err.internal(franchiseRes.error.message);
+    if (bankRes.error) throw Err.internal(bankRes.error.message);
     if (usersRes.error) throw Err.internal(usersRes.error.message);
 
     type LiteUser = { id: string; email: string; full_name: string };
@@ -63,6 +76,7 @@ serveJson(async ({ sb, body }) => {
         items: itemsRes.data ?? [],
         customer: customerRes.data,
         franchise: franchiseRes.data,
+        bank: bankRes.data,
         creator: usersById.get(invoice.created_by) ?? null,
         last_editor: invoice.last_edited_by ? usersById.get(invoice.last_edited_by) ?? null : null,
       },

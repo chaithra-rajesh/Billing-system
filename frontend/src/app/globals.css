@@ -126,13 +126,20 @@
  * mode when they hit Print.
  */
 @media print {
+  /* margin: 0 + inner padding lets us reclaim the area where Chrome/Edge
+   * normally draw their URL+title header/footer. Users still need to uncheck
+   * "Headers and footers" in the print dialog for full suppression — there is
+   * no CSS that hides them when the user has them turned on. */
   @page {
     size: A4;
-    margin: 12mm;
+    margin: 0;
   }
   html,
   body {
     background: white !important;
     color: black !important;
+  }
+  body {
+    padding: 12mm;
   }
 }

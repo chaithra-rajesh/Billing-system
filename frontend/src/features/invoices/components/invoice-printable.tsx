@@ -1,6 +1,8 @@
 'use client';
 
+import { amountToIndianWords } from '@/lib/words';
 import type {
+  BankSnapshot,
   GetInvoiceResponse,
   InvoiceCustomer,
   InvoiceFranchise,
@@ -44,16 +46,47 @@ interface InvoicePrintableProps {
   items: InvoiceItem[];
   customer: InvoiceCustomer;
   franchise: InvoiceFranchise;
+  /** Live active bank_details, used only when invoice.bank_snapshot is null. */
+  bank?: BankSnapshot | null;
 }
 
-export function InvoicePrintable({ invoice, items, customer, franchise }: InvoicePrintableProps) {
+export function InvoicePrintable({
+  invoice,
+  items,
+  customer,
+  franchise,
+  bank,
+}: InvoicePrintableProps) {
   const isIntra =
     invoice.cgst_amount > 0 || invoice.sgst_amount > 0 || invoice.igst_amount === 0;
 
   const gst = invoice.gst_snapshot;
-  const cgstPct = gst?.cgst_percent ?? 0;
-  const sgstPct = gst?.sgst_percent ?? 0;
-  const igstPct = gst?.igst_percent ?? 0;
+  // Display-only fallback: older rows had gst_snapshot percentages stored as 0
+  // even though tax was applied. Derive from amount ÷ subtotal in that case so
+  // the printed invoice doesn't say "CGST @ 0.00% — 9,278.80". Snapshot row
+  // itself is not mutated; rule 3 (immutability) still holds.
+  const inferPct = (amount: number, snapshotPct: number | null | undefined) => {
+    const fromSnap = Number(snapshotPct ?? 0);
+    if (fromSnap > 0) return fromSnap;
+    if (invoice.subtotal > 0 && amount > 0) {
+      return Math.round((amount / invoice.subtotal) * 10000) / 100;
+    }
+    return 0;
+  };
+  const cgstPct = inferPct(invoice.cgst_amount, gst?.cgst_percent);
+  const sgstPct = inferPct(invoice.sgst_amount, gst?.sgst_percent);
+  const igstPct = inferPct(invoice.igst_amount, gst?.igst_percent);
+
+  // Drafts and older rows may have null grand_total_words. Compute on the fly
+  // so the printed invoice never has a blank "amount in words" line.
+  const totalInWords =
+    invoice.grand_total_words?.trim() || amountToIndianWords(invoice.grand_total);
+
+  // Drafts have no bank_snapshot yet — fall back to the franchise's currently
+  // active bank so the print preview isn't blank. Finalised invoices carry
+  // their snapshot and are unaffected (rule 3 immutability preserved).
+  const bankToShow = invoice.bank_snapshot ?? bank ?? null;
+  const signatureToShow = invoice.signature_snapshot ?? franchise.signature_url ?? null;
 
   const shipName = invoice.ship_to_name || '';
   const shipAddress = invoice.ship_to_address || '';
@@ -189,35 +222,32 @@ export function InvoicePrintable({ invoice, items, customer, franchise }: Invoic
 
         {/* Words (left) + Totals stack (right) */}
         <div className="flex border-b border-black">
-          <div className="flex-1 border-r border-black p-1">
+          <div className="flex flex-1 flex-col border-r border-black p-1">
             <div className="text-center font-semibold">Total Invoice amount in words</div>
-            <div className="mt-1">
-              <span className="font-semibold">Rupees : </span>
-              {invoice.grand_total_words || ''}
-            </div>
+            <div className="mt-1 break-words">{totalInWords}</div>
           </div>
-          <div className="w-52">
+          <div className="w-60">
             <TotalLine label="TOTAL" value={fmtINR(invoice.subtotal)} bold />
             {isIntra ? (
               <>
                 <TotalLine
-                  label={`Add : CGST @ ${Number(cgstPct).toFixed(2)}%`}
+                  label={`Add : CGST @ ${cgstPct.toFixed(2)}%`}
                   value={fmtINR(invoice.cgst_amount)}
                 />
                 <TotalLine
-                  label={`Add : SGST @ ${Number(sgstPct).toFixed(2)}%`}
+                  label={`Add : SGST @ ${sgstPct.toFixed(2)}%`}
                   value={fmtINR(invoice.sgst_amount)}
                 />
               </>
             ) : (
               <TotalLine
-                label={`Add : IGST @ ${Number(igstPct).toFixed(2)}%`}
+                label={`Add : IGST @ ${igstPct.toFixed(2)}%`}
                 value={fmtINR(invoice.igst_amount)}
               />
             )}
             <div className="flex bg-gray-100 font-bold">
               <div className="flex-1 border-r border-black p-1">GRAND TOTAL</div>
-              <div className="w-24 p-1 text-right font-mono tabular-nums">
+              <div className="w-28 p-1 text-right font-mono tabular-nums">
                 {fmtINR(invoice.grand_total)}
               </div>
             </div>
@@ -237,25 +267,25 @@ export function InvoicePrintable({ invoice, items, customer, franchise }: Invoic
           </div>
           <div className="flex-1 border-r border-black p-1">
             <div className="text-center font-semibold">Bank Details</div>
-            {invoice.bank_snapshot && (
+            {bankToShow && (
               <>
                 <div>
                   <span className="font-semibold">Bank Name : </span>
-                  {invoice.bank_snapshot.bank_name}
+                  {bankToShow.bank_name}
                 </div>
                 <div>
                   <span className="font-semibold">A/c. No. : </span>
-                  {invoice.bank_snapshot.account_no}
+                  {bankToShow.account_no}
                 </div>
-                {invoice.bank_snapshot.branch && (
+                {bankToShow.branch && (
                   <div>
                     <span className="font-semibold">Branch : </span>
-                    {invoice.bank_snapshot.branch}
+                    {bankToShow.branch}
                   </div>
                 )}
                 <div>
                   <span className="font-semibold">IFSC : </span>
-                  {invoice.bank_snapshot.ifsc}
+                  {bankToShow.ifsc}
                 </div>
               </>
             )}
@@ -263,10 +293,10 @@ export function InvoicePrintable({ invoice, items, customer, franchise }: Invoic
           <div className="flex w-52 flex-col items-center p-1 text-center">
             <div className="font-bold">{franchise.name}</div>
             <div className="mt-4">
-              {invoice.signature_snapshot && (
+              {signatureToShow && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={invoice.signature_snapshot}
+                  src={signatureToShow}
                   alt=""
                   className="mx-auto h-10 object-contain"
                 />
@@ -339,7 +369,7 @@ function TotalLine({ label, value, bold }: { label: string; value: string; bold?
   return (
     <div className={`flex border-b border-black ${bold ? 'font-semibold' : ''}`}>
       <div className="flex-1 border-r border-black p-1">{label}</div>
-      <div className="w-24 p-1 text-right font-mono tabular-nums">{value}</div>
+      <div className="w-28 p-1 text-right font-mono tabular-nums">{value}</div>
     </div>
   );
 }
@@ -351,6 +381,7 @@ export function buildInvoicePrintable(data: GetInvoiceResponse) {
       items={data.items}
       customer={data.customer}
       franchise={data.franchise}
+      bank={data.bank}
     />
   );
 }

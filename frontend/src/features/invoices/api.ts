@@ -114,6 +114,9 @@ export interface GetInvoiceResponse {
   items: InvoiceItem[];
   customer: InvoiceCustomer;
   franchise: InvoiceFranchise;
+  /** Currently active bank_details for the franchise. Used by the printable as
+   *  a fallback when invoice.bank_snapshot is null. */
+  bank: BankSnapshot | null;
   creator: InvoiceUser | null;
   last_editor: InvoiceUser | null;
 }
@@ -176,6 +179,17 @@ export interface UpdateInvoiceResponse {
   items: InvoiceItem[];
 }
 
+export interface FinaliseInvoiceInput {
+  invoice_id: string;
+  cgst_percent?: number;
+  sgst_percent?: number;
+  igst_percent?: number;
+}
+
+export interface FinaliseInvoiceResponse {
+  invoice: InvoiceRow;
+}
+
 export function listInvoices(
   franchiseId: string,
   opts?: { status?: InvoiceStatus; limit?: number; offset?: number; signal?: AbortSignal },
@@ -207,6 +221,13 @@ export function createInvoice(input: CreateInvoiceInput, idempotencyKey: string)
 
 export function updateInvoice(input: UpdateInvoiceInput, idempotencyKey: string) {
   return invokeFunction<UpdateInvoiceResponse>('update-invoice', {
+    body: input,
+    idempotencyKey,
+  });
+}
+
+export function finaliseInvoice(input: FinaliseInvoiceInput, idempotencyKey: string) {
+  return invokeFunction<FinaliseInvoiceResponse>('finalise-invoice', {
     body: input,
     idempotencyKey,
   });

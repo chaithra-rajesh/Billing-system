@@ -57,7 +57,7 @@ function InvoiceDetailView({ slug, invoiceId }: { slug: string; invoiceId: strin
     );
   }
 
-  const { invoice, items, customer, franchise, creator, last_editor } = data;
+  const { invoice, items, customer, franchise, bank, creator, last_editor } = data;
   const isIntra = invoice.cgst_amount > 0 || invoice.sgst_amount > 0;
   const creatorLabel = creator?.full_name || creator?.email || invoice.created_by;
   const editorLabel = last_editor?.full_name || last_editor?.email || invoice.last_edited_by;
@@ -236,6 +236,7 @@ function InvoiceDetailView({ slug, invoiceId }: { slug: string; invoiceId: strin
           items={items}
           customer={customer}
           franchise={franchise}
+          bank={bank}
         />
       </div>
     </>

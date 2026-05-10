@@ -233,16 +233,16 @@ async function runCreate(args: CreateArgs) {
       const subtotal = round2(itemsWithAmount.reduce((s, it) => s + it.amount, 0));
 
       // Use the editor-provided percentages directly. Fall back to active
-      // gst_config for the row that wasn't supplied (e.g. a draft created
-      // without the editor walking through the totals block).
+      // gst_config only when the field was not supplied at all (undefined) —
+      // an explicit 0 % (zero-rated goods) must be honoured, so use ?? not ||.
       const cgstPct = args.tax_mode === 'intra'
-        ? args.cgst_percent || Number(activeGst?.cgst_percent ?? 0)
+        ? Number(args.cgst_percent ?? activeGst?.cgst_percent ?? 0)
         : 0;
       const sgstPct = args.tax_mode === 'intra'
-        ? args.sgst_percent || Number(activeGst?.sgst_percent ?? 0)
+        ? Number(args.sgst_percent ?? activeGst?.sgst_percent ?? 0)
         : 0;
       const igstPct = args.tax_mode === 'inter'
-        ? args.igst_percent || Number(activeGst?.igst_percent ?? 0)
+        ? Number(args.igst_percent ?? activeGst?.igst_percent ?? 0)
         : 0;
 
       const cgst_amount = round2((subtotal * cgstPct) / 100);

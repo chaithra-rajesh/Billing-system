@@ -8,7 +8,7 @@ import { AppShell, PageTitle } from '@/components/layout/app-shell';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingInvoiceForm } from '@/components/ui/loading-states';
 import { useFranchiseBySlug, useFranchiseContext } from '@/features/franchises/hooks';
-import { useInvoice, useUpdateInvoice } from '@/features/invoices/hooks';
+import { useFinaliseInvoice, useInvoice, useUpdateInvoice } from '@/features/invoices/hooks';
 import {
   InvoiceForm,
   defaultInvoiceFormValues,
@@ -37,9 +37,11 @@ function EditInvoiceView({ slug, invoiceId }: { slug: string; invoiceId: string 
   const ctxQuery = useFranchiseContext(brief?.id);
   const invoiceQuery = useInvoice(invoiceId);
   const updateMutation = useUpdateInvoice();
+  const finaliseMutation = useFinaliseInvoice();
 
   const ctx = ctxQuery.data;
   const detail = invoiceQuery.data;
+  const saving = updateMutation.isPending || finaliseMutation.isPending;
 
   const initialValues = useMemo<InvoiceFormValues | undefined>(() => {
     if (!detail) return undefined;
@@ -87,6 +89,58 @@ function EditInvoiceView({ slug, invoiceId }: { slug: string; invoiceId: string 
     } catch (e) {
       const msg =
         e instanceof EdgeFunctionError ? e.message : (e as Error)?.message || 'Save failed';
+      toast.error(msg);
+    }
+  }
+
+  async function handleFinalise(values: InvoiceFormValues) {
+    if (!detail) return;
+    try {
+      // Save first so the latest field edits are persisted, then flip the
+      // status to finalised. Two round-trips, but keeps update-invoice and
+      // finalise-invoice as separate single-purpose endpoints.
+      await updateMutation.mutateAsync({
+        idempotencyKey: crypto.randomUUID(),
+        input: {
+          invoice_id: detail.invoice.id,
+          customer_id: values.customer_id,
+          invoice_date: values.invoice_date || undefined,
+          date_of_supply: values.date_of_supply || undefined,
+          transport_mode: values.transport_mode || undefined,
+          vehicle_no: values.vehicle_no || undefined,
+          place_of_supply: values.place_of_supply || undefined,
+          ship_to_name: values.ship_to_name || undefined,
+          ship_to_address: values.ship_to_address || undefined,
+          ship_to_gstin: values.ship_to_gstin || undefined,
+          ship_to_state: values.ship_to_state || undefined,
+          ship_to_state_code: values.ship_to_state_code || undefined,
+          items: values.items.map((it) => ({
+            particulars: it.particulars,
+            hsn_code: it.hsn_code || undefined,
+            quantity: Number(it.quantity),
+            rate: Number(it.rate),
+          })),
+          tax_mode: values.tax_mode,
+          cgst_percent: values.tax_mode === 'intra' ? Number(values.cgst_percent) : 0,
+          sgst_percent: values.tax_mode === 'intra' ? Number(values.sgst_percent) : 0,
+          igst_percent: values.tax_mode === 'inter' ? Number(values.igst_percent) : 0,
+        },
+      });
+
+      const res = await finaliseMutation.mutateAsync({
+        idempotencyKey: crypto.randomUUID(),
+        input: {
+          invoice_id: detail.invoice.id,
+          cgst_percent: values.tax_mode === 'intra' ? Number(values.cgst_percent) : 0,
+          sgst_percent: values.tax_mode === 'intra' ? Number(values.sgst_percent) : 0,
+          igst_percent: values.tax_mode === 'inter' ? Number(values.igst_percent) : 0,
+        },
+      });
+      toast.success(`Finalised — ${res.invoice.invoice_no}`);
+      router.replace(`/franchises/${slug}/invoices/${res.invoice.id}`);
+    } catch (e) {
+      const msg =
+        e instanceof EdgeFunctionError ? e.message : (e as Error)?.message || 'Finalise failed';
       toast.error(msg);
     }
   }
@@ -145,10 +199,12 @@ function EditInvoiceView({ slug, invoiceId }: { slug: string; invoiceId: string 
         initialValues={initialValues}
         initialCustomer={initialCustomer}
         invoiceNoLabel={detail.invoice.invoice_no}
-        saving={updateMutation.isPending}
-        showFinaliseButton={false}
+        saving={saving}
+        showFinaliseButton
+        finaliseLabel="Finalise"
         cancelHref={() => router.push(`/franchises/${slug}/invoices/${invoiceId}`)}
         onSaveDraft={handleSave}
+        onFinalise={handleFinalise}
       />
     </AppShell>
   );
