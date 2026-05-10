@@ -2,11 +2,6 @@
 .env
 .env.*
 !.env.example
-# Frontend NEXT_PUBLIC_* values only — they are inlined into the client
-# bundle by Next.js and visible to any browser, so they are not secrets.
-# Required because Cloudflare Pages' next-on-pages build does not pass
-# dashboard env vars through to `next build`.
-!frontend/.env.production
 *.pem
 *.key
 secrets/
