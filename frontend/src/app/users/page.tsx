@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Building2, Mail, Plus, ShieldCheck, UserPlus, X } from 'lucide-react';
 import { RequireAuth } from '@/components/auth/require-auth';
@@ -9,6 +9,7 @@ import { AppShell, PageTitle } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormError } from '@/components/ui/form-error';
+import { FranchisePicker } from '@/components/ui/franchise-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingTableCard } from '@/components/ui/loading-states';
@@ -212,17 +213,18 @@ function UsersView() {
                     key={field.id}
                     className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_180px_auto]"
                   >
-                    <select
-                      {...register(`assignments.${idx}.franchise_id`, { required: true })}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="">Pick a franchise…</option>
-                      {franchises.map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.name}
-                        </option>
-                      ))}
-                    </select>
+                    <Controller
+                      control={control}
+                      name={`assignments.${idx}.franchise_id`}
+                      rules={{ required: true }}
+                      render={({ field: pickerField }) => (
+                        <FranchisePicker
+                          value={pickerField.value}
+                          onChange={pickerField.onChange}
+                          options={franchises}
+                        />
+                      )}
+                    />
                     <select
                       {...register(`assignments.${idx}.role`)}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -428,17 +430,14 @@ function AssignFranchiseRow({
 
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2 text-xs">
-      <select
-        value={franchiseId}
-        onChange={(e) => setFranchiseId(e.target.value)}
-        className="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-xs"
-      >
-        {availableFranchises.map((f) => (
-          <option key={f.id} value={f.id}>
-            {f.name}
-          </option>
-        ))}
-      </select>
+      <div className="min-w-0 flex-1">
+        <FranchisePicker
+          value={franchiseId}
+          onChange={setFranchiseId}
+          options={availableFranchises}
+          compact
+        />
+      </div>
       <select
         value={role}
         onChange={(e) => setRole(e.target.value as FranchiseRole)}
