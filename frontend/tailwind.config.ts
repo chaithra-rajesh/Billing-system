@@ -81,16 +81,17 @@ const config: Config = {
           from: { opacity: '0', transform: 'translateY(4px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
-        'progress-indeterminate': {
-          '0%': { transform: 'translateX(-100%) scaleX(0.4)' },
-          '50%': { transform: 'translateX(0%) scaleX(0.6)' },
-          '100%': { transform: 'translateX(100%) scaleX(0.4)' },
+        'progress-creep': {
+          '0%': { transform: 'scaleX(0)' },
+          '20%': { transform: 'scaleX(0.3)' },
+          '60%': { transform: 'scaleX(0.7)' },
+          '100%': { transform: 'scaleX(0.9)' },
         },
       },
       animation: {
         'fade-in': 'fade-in 150ms ease-out',
         'slide-up': 'slide-up 200ms ease-out',
-        'progress-indeterminate': 'progress-indeterminate 1100ms cubic-bezier(0.4, 0, 0.2, 1) infinite',
+        'progress-creep': 'progress-creep 3000ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
       },
     },
   },
